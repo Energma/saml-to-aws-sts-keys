@@ -230,7 +230,7 @@ async function onBeforeRequestEvent(details) {
     if (DebugLogs) console.log("DEBUG: Additional Role ARNs are configured");
     // Loop through each profile (each profile has a role ARN as value)
     let profileList = Object.keys(RoleArns);
-    for (let i = 0; i <= profileList.length; i++) {
+    for (let i = 0; i < profileList.length; i++) {
       console.log(
         "INFO: Do additional assume-role for role -> " +
           RoleArns[profileList[i]] +
