@@ -1,36 +1,67 @@
 <!doctype html>
 <html>
   <head>
-    <title>SAML to AWS STS Keys Converter</title>
+    <title>Energma: SAML to AWS STS Keys Converter</title>
     <style>
-    div.status {
-        width:200px;
-    }
-    .options{
-      font-size: 14px;
-    }
-    .optbutton {
-      padding: 8px 12px;
-      text-align: center;
-      text-decoration: none;
-      display: inline-block;
-      margin: 10px 0px 2px 0px;
-      transition-duration: 0.4s;
-      cursor: pointer;
-      background-color: white;
-      color: black;
-      border: 2px solid #555555;
-    }
-    .optbutton:hover {
-      background-color: #555555;
-      color: white;
-    }
+      html {
+        border: 2px solid black;
+        height: 184px;
+        padding: 0px;
+        margin: 0px;
+      }
+      .options{
+        font-size: 14px;
+        font-family: Arial, Helvetica, sans-serif;
+      }
+      h3 {
+        color: white;
+        text-shadow: 1px 1px 2px black;
+      }
+      label {
+        color:white;
+        text-shadow: 1px 1px 2px black;
+      }
+      body {
+        margin: 0px;
+        display: flex;
+        background: #f1c47b;
+        color: black;
+        min-width: 250px;
+        padding: 8px;
+        border-radius: 10px;
+        font-size: 14px;
+        justify-content: center;
+        flex-direction: column;
+      }
+      .optbutton {
+        padding: 8px 12px;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        margin: 10px 0px 2px 0px;
+        transition-duration: 0.4s;
+        cursor: pointer;
+        background-color: white;
+        color: black;
+        border: 2px solid #555555;
+      }
+      .optbutton:hover {
+        background-color: #555555;
+        color: white;
+      }
+      .company {
+        display: flex;
+        img {
+          width: 40px;
+        }
+      }
   </style>
   </head>
 
   <body>
-
     <div class="status">
+      <div class="company"><img alt="logo" src="../icons/icon_32.png" />   <h3>Energma</h3></div>
+    
       <h3>SAML to AWS STS Keys</h3>
       <label class="options">Activated:</label><input type="checkbox" id="chkboxactivated"></input>
     <br />
