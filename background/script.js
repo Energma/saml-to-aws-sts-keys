@@ -47,7 +47,7 @@ function addOnBeforeRequestEventListener() {
   } else {
     chrome.webRequest.onBeforeRequest.addListener(
       onBeforeRequestEvent,
-      { urls: ["https://signin.aws.amazon.com/saml"] },
+      { urls: ["https://signin.aws.amazon.com/saml","https://signin.amazonaws.cn/saml","https://*signin.amazonaws-us-gov.com/saml"] },
       ["requestBody"]
     );
     if (DebugLogs) console.log("DEBUG: onBeforeRequest Listener added");
@@ -279,16 +279,18 @@ async function assumeRoleWithSAML(
   SessionDuration
 ) {
   // Pattern for Role
-  let reRole = /arn:aws:iam:[^:]*:[0-9]+:role\/[^,]+/i;
+  let reRole = /arn:(aws|aws-cn|aws-us-gov):iam:[^:]*:[0-9]+:role\/[^,]+/i;
   // Patern for Principal (SAML Provider)
-  let rePrincipal = /arn:aws:iam:[^:]*:[0-9]+:saml-provider\/[^,]+/i;
+  let rePrincipal = /arn:(aws|aws-cn|aws-us-gov):iam:[^:]*:[0-9]+:saml-provider\/[^,]+/i;
   // Extract both regex patterns from the roleClaimValue (which is a SAMLAssertion attribute)
   RoleArn = roleClaimValue.match(reRole)[0];
   PrincipalArn = roleClaimValue.match(rePrincipal)[0];
+  AWSPartition = roleClaimValue.match(reRole)[1];
 
   if (DebugLogs) {
     console.log("RoleArn: " + RoleArn);
     console.log("PrincipalArn: " + PrincipalArn);
+    console.log("AWSPartition: " + AWSPartition);
   }
 
   // Set parameters needed for AWS STS assumeRoleWithSAML API method
@@ -303,11 +305,18 @@ async function assumeRoleWithSAML(
 
   // AWS SDK is a module exorted from a webpack packaged lib
   // See 'library.name' in webpack.config.js
+  /*
   let clientconfig = {
     region: "us-east-1", // region is mandatory to specify, but ignored when using global endpoint
     useGlobalEndpoint: true,
   };
-  const client = new webpacksts.AWSSTSClient(clientconfig);
+  */
+  let clientconfig = {
+    "aws": {region: "us-east-1",useGlobalEndpoint: true},
+    "aws-cn":{region: "cn-north-1"},
+    "aws-us-gov": {region: "us-east-1",useGlobalEndpoint: true}
+  }
+  const client = new webpacksts.AWSSTSClient(clientconfig[AWSPartition]);
   const command = new webpacksts.AWSAssumeRoleWithSAMLCommand(params);
 
   console.log(
@@ -343,6 +352,18 @@ async function assumeRole(
   SessionDuration
 ) {
   // Set the fetched STS keys from the SAML response as credentials for doing the API call
+  var RolePattern = /arn:(aws|aws-us-gov|aws-cn):iam:[^:]*:[0-9]+:role\/[^,]+/i;
+  AWSPartition = roleArn.match(RolePattern)[1];
+  if (AWSPartition == "aws-cn"){
+    let clientconfig = {
+    region: "cn-north-1",
+    credentials: {
+      accessKeyId: AccessKeyId,
+      secretAccessKey: SecretAccessKey,
+      sessionToken: SessionToken,
+    },
+  };
+  }else{
   let clientconfig = {
     region: "us-east-1", // region is mandatory to specify, but ignored when using global endpoint
     useGlobalEndpoint: true,
@@ -352,6 +373,8 @@ async function assumeRole(
       sessionToken: SessionToken,
     },
   };
+  }
+
   // AWS SDK is a module exorted from a webpack packaged lib
   // See 'library.name' in webpack.config.js
   const client = new webpacksts.AWSSTSClient(clientconfig);
