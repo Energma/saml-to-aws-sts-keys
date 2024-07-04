@@ -354,7 +354,7 @@ async function assumeRole(
   // Set the fetched STS keys from the SAML response as credentials for doing the API call
   var RolePattern = /arn:(aws|aws-us-gov|aws-cn):iam:[^:]*:[0-9]+:role\/[^,]+/i;
   AWSPartition = roleArn.match(RolePattern)[1];
-  if (AWSPartition == "aws-cn"){
+  if (AWSPartition == "aws-cn") {
     let clientconfig = {
     region: "cn-north-1",
     credentials: {
@@ -363,7 +363,7 @@ async function assumeRole(
       sessionToken: SessionToken,
     },
   };
-  }else{
+  } else {
   let clientconfig = {
     region: "us-east-1", // region is mandatory to specify, but ignored when using global endpoint
     useGlobalEndpoint: true,
