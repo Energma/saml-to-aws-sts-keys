@@ -174,7 +174,7 @@ async function onBeforeRequestEvent(details) {
   if (attributes_role_list.length > 1 && hasRoleIndex) {
     if (DebugLogs)
       console.log("DEBUG: More than one role claimed and role chosen.");
-    for (i = 0; i <= attributes_role_list.length; i++) {
+    for (i = 0; i <= attributes_role_list.length - 1; i++) {
       // roleIndex is an AWS IAM Role ARN.
       // We need to check which item in attributes_role_list matches with roleIndex as substring
       if (attributes_role_list[i]["#text"].indexOf(roleIndex) > -1) {
