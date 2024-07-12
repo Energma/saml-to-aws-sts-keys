@@ -1,6 +1,7 @@
 importScripts(
   "../lib/fxparser.min.js", // https://github.com/NaturalIntelligence/fast-xml-parser
-  "../lib/aws-sdk/lib/aws-js-sdk-bundle.js"
+  "../lib/aws-sdk/lib/aws-js-sdk-bundle.js",
+  "../lib/aliyun.js"
 );
 
 // Global variables
@@ -10,6 +11,10 @@ let CustomSessionDuration = 3600;
 let DebugLogs = false;
 let RoleArns = {};
 let LF = "\n";
+// Change newline sequence when client is on Windows
+if (navigator.userAgent.indexOf("Windows") !== -1) {
+  LF = "\r\n";
+}
 
 // When this background process starts, load variables from chrome storage
 // from saved Extension Options
@@ -47,7 +52,11 @@ function addOnBeforeRequestEventListener() {
   } else {
     chrome.webRequest.onBeforeRequest.addListener(
       onBeforeRequestEvent,
-      { urls: ["https://signin.aws.amazon.com/saml","https://signin.amazonaws.cn/saml","https://signin.amazonaws-us-gov.com/saml"] },
+      {
+        urls: ["https://signin.aws.amazon.com/saml", "https://signin.amazonaws.cn/saml", "https://signin.amazonaws-us-gov.com/saml",
+          "https://cloud.tencent.com/login/saml", "https://signin.aliyun.com/saml-role/sso",
+          "https://*.aliyun.com/entrance?Action=V2AssumeRoleWithSaml", "https://cloud.tencent.com/login/foward"]
+      },
       ["requestBody"]
     );
     if (DebugLogs) console.log("DEBUG: onBeforeRequest Listener added");
@@ -61,12 +70,22 @@ function removeOnBeforeRequestEventListener() {
 }
 
 // Callback function for the webRequest OnBeforeRequest EventListener
-// This function runs on each request to https://signin.aws.amazon.com/saml
 async function onBeforeRequestEvent(details) {
-  if (DebugLogs) console.log("DEBUG: onBeforeRequest event hit!");
-  // Get the SAML payload
   let samlXmlDoc = "";
   let formDataPayload = undefined;
+  options = {
+    ignoreAttributes: false,
+    attributeNamePrefix: "__",
+    removeNSPrefix: true,
+    alwaysCreateTextNode: true,
+  };
+  if (DebugLogs) console.log("DEBUG: onBeforeRequest event hit!", details);
+  if (details.url.includes("aliyun")) {
+    saml2aliyun(details)
+  }
+  //if the url is not aliyun, fall into default aws process 
+  // Get the SAML payload
+
   // The SAML payload should normally be present as HTTP POST parameter 'SAMLResponse'
   // In reality, since Chrome 62 this broke for certain users. Although not for everyone.
   // As a backup, the raw request body can be used to extract the SAML payload.
@@ -97,12 +116,7 @@ async function onBeforeRequestEvent(details) {
   }
 
   // Convert XML to JS object
-  options = {
-    ignoreAttributes: false,
-    attributeNamePrefix: "__",
-    removeNSPrefix: true,
-    alwaysCreateTextNode: true,
-  };
+
   parser = new XMLParser(options);
   jsObj = parser.parse(samlXmlDoc);
   console.log("INFO: jsObj");
@@ -111,7 +125,7 @@ async function onBeforeRequestEvent(details) {
   attributes = jsObj["Response"].Assertion.AttributeStatement.Attribute;
   // Loop through attributes to find the required ones
   for (let i in attributes) {
-    if (attributes[i].__Name == "https://aws.amazon.com/SAML/Attributes/Role") {
+    if (attributes[i].__Name == "https://aws.amazon.com/SAML/Attributes/Role" || attributes[i].__Name == "https://www.aliyun.com/SAML-Role/Attributes/Role" || attributes[i].__Name == "https://cloud.tencent.com/SAML/Attributes/Role") {
       attributes_role_list = attributes[i].AttributeValue;
       if (DebugLogs) {
         console.log("DEBUG: attributes_role_list:");
@@ -146,7 +160,6 @@ async function onBeforeRequestEvent(details) {
     roleIndex = formDataPayload.get("roleIndex");
     hasRoleIndex = roleIndex != undefined;
   }
-
   // Set the session duration to the value of CustomSessionDuration if:
   // * session duration was not supplied in the SAML assertion
   // * user configured to NOT use the session duration supplied in the SAML assertion
@@ -154,10 +167,7 @@ async function onBeforeRequestEvent(details) {
     sessionduration = CustomSessionDuration;
   }
 
-  // Change newline sequence when client is on Windows
-  if (navigator.userAgent.indexOf("Windows") !== -1) {
-    LF = "\r\n";
-  }
+
 
   if (DebugLogs) {
     console.log("ApplySessionDuration: " + ApplySessionDuration);
@@ -233,10 +243,10 @@ async function onBeforeRequestEvent(details) {
     for (let i = 0; i <= profileList.length; i++) {
       console.log(
         "INFO: Do additional assume-role for role -> " +
-          RoleArns[profileList[i]] +
-          " with profile name '" +
-          profileList[i] +
-          "'."
+        RoleArns[profileList[i]] +
+        " with profile name '" +
+        profileList[i] +
+        "'."
       );
       // Call AWS STS API to get credentials using Access Key ID and Secret Access Key as authentication
       try {
@@ -312,9 +322,9 @@ async function assumeRoleWithSAML(
   };
   */
   let clientconfig = {
-    "aws": {region: "us-east-1",useGlobalEndpoint: true},
-    "aws-cn":{region: "cn-north-1"},
-    "aws-us-gov": {region: "us-east-1",useGlobalEndpoint: true}
+    "aws": { region: "us-east-1", useGlobalEndpoint: true },
+    "aws-cn": { region: "cn-north-1" },
+    "aws-us-gov": { region: "us-east-1", useGlobalEndpoint: true }
   }
   const client = new webpacksts.AWSSTSClient(clientconfig[AWSPartition]);
   const command = new webpacksts.AWSAssumeRoleWithSAMLCommand(params);
@@ -356,23 +366,23 @@ async function assumeRole(
   AWSPartition = roleArn.match(RolePattern)[1];
   if (AWSPartition == "aws-cn") {
     let clientconfig = {
-    region: "cn-north-1",
-    credentials: {
-      accessKeyId: AccessKeyId,
-      secretAccessKey: SecretAccessKey,
-      sessionToken: SessionToken,
-    },
-  };
+      region: "cn-north-1",
+      credentials: {
+        accessKeyId: AccessKeyId,
+        secretAccessKey: SecretAccessKey,
+        sessionToken: SessionToken,
+      },
+    };
   } else {
-  let clientconfig = {
-    region: "us-east-1", // region is mandatory to specify, but ignored when using global endpoint
-    useGlobalEndpoint: true,
-    credentials: {
-      accessKeyId: AccessKeyId,
-      secretAccessKey: SecretAccessKey,
-      sessionToken: SessionToken,
-    },
-  };
+    let clientconfig = {
+      region: "us-east-1", // region is mandatory to specify, but ignored when using global endpoint
+      useGlobalEndpoint: true,
+      credentials: {
+        accessKeyId: AccessKeyId,
+        secretAccessKey: SecretAccessKey,
+        sessionToken: SessionToken,
+      },
+    };
   }
 
   // AWS SDK is a module exorted from a webpack packaged lib
