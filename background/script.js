@@ -11,9 +11,11 @@ let CustomSessionDuration = 3600;
 let DebugLogs = false;
 let RoleArns = {};
 let LF = "\n";
+let OS = "";
 // Change newline sequence when client is on Windows
 if (navigator.userAgent.indexOf("Windows") !== -1) {
   LF = "\r\n";
+  OS = "non-windows";
 }
 
 // When this background process starts, load variables from chrome storage
@@ -81,7 +83,7 @@ async function onBeforeRequestEvent(details) {
   };
   if (DebugLogs) console.log("DEBUG: onBeforeRequest event hit!", details);
   if (details.url.includes("aliyun")) {
-    saml2aliyun(details)
+    saml2aliyun(details, OS)
   }
   //if the url is not aliyun, fall into default aws process 
   // Get the SAML payload
