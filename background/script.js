@@ -11,11 +11,11 @@ let CustomSessionDuration = 3600;
 let DebugLogs = false;
 let RoleArns = {};
 let LF = "\n";
-let OS = "";
+let OS = "non-windows";
 // Change newline sequence when client is on Windows
 if (navigator.userAgent.indexOf("Windows") !== -1) {
   LF = "\r\n";
-  OS = "non-windows";
+  OS = "windows";
 }
 
 // When this background process starts, load variables from chrome storage
