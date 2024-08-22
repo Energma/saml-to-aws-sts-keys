@@ -55,9 +55,15 @@ function addOnBeforeRequestEventListener() {
     chrome.webRequest.onBeforeRequest.addListener(
       onBeforeRequestEvent,
       {
-        urls: ["https://signin.aws.amazon.com/saml", "https://signin.amazonaws.cn/saml", "https://signin.amazonaws-us-gov.com/saml",
-          "https://cloud.tencent.com/login/saml", "https://signin.aliyun.com/saml-role/sso",
-          "https://*.aliyun.com/entrance?Action=V2AssumeRoleWithSaml", "https://cloud.tencent.com/login/foward"]
+        urls: [
+          "https://signin.aws.amazon.com/saml",
+          "https://signin.amazonaws.cn/saml",
+          "https://signin.amazonaws-us-gov.com/saml",
+          "https://cloud.tencent.com/login/saml",
+          "https://signin.aliyun.com/saml-role/sso",
+          "https://*.aliyun.com/entrance?Action=V2AssumeRoleWithSaml",
+          "https://cloud.tencent.com/login/foward",
+        ],
       },
       ["requestBody"]
     );
@@ -83,9 +89,9 @@ async function onBeforeRequestEvent(details) {
   };
   if (DebugLogs) console.log("DEBUG: onBeforeRequest event hit!", details);
   if (details.url.includes("aliyun")) {
-    saml2aliyun(details, OS)
+    saml2aliyun(details, OS);
   }
-  //if the url is not aliyun, fall into default aws process 
+  //if the url is not aliyun, fall into default aws process
   // Get the SAML payload
 
   // The SAML payload should normally be present as HTTP POST parameter 'SAMLResponse'
@@ -127,7 +133,12 @@ async function onBeforeRequestEvent(details) {
   attributes = jsObj["Response"].Assertion.AttributeStatement.Attribute;
   // Loop through attributes to find the required ones
   for (let i in attributes) {
-    if (attributes[i].__Name == "https://aws.amazon.com/SAML/Attributes/Role" || attributes[i].__Name == "https://www.aliyun.com/SAML-Role/Attributes/Role" || attributes[i].__Name == "https://cloud.tencent.com/SAML/Attributes/Role") {
+    if (
+      attributes[i].__Name == "https://aws.amazon.com/SAML/Attributes/Role" ||
+      attributes[i].__Name ==
+        "https://www.aliyun.com/SAML-Role/Attributes/Role" ||
+      attributes[i].__Name == "https://cloud.tencent.com/SAML/Attributes/Role"
+    ) {
       attributes_role_list = attributes[i].AttributeValue;
       if (DebugLogs) {
         console.log("DEBUG: attributes_role_list:");
@@ -168,8 +179,6 @@ async function onBeforeRequestEvent(details) {
   if (typeof sessionduration === "undefined" || !ApplySessionDuration) {
     sessionduration = CustomSessionDuration;
   }
-
-
 
   if (DebugLogs) {
     console.log("ApplySessionDuration: " + ApplySessionDuration);
@@ -242,14 +251,15 @@ async function onBeforeRequestEvent(details) {
     if (DebugLogs) console.log("DEBUG: Additional Role ARNs are configured");
     // Loop through each profile (each profile has a role ARN as value)
     let profileList = Object.keys(RoleArns);
-    for (let i = 0; i <= profileList.length; i++) {
+    for (let i = 0; i < profileList.length; i++) {
       console.log(
         "INFO: Do additional assume-role for role -> " +
-        RoleArns[profileList[i]] +
-        " with profile name '" +
-        profileList[i] +
-        "'."
+          RoleArns[profileList[i]] +
+          " with profile name '" +
+          profileList[i] +
+          "'."
       );
+
       // Call AWS STS API to get credentials using Access Key ID and Secret Access Key as authentication
       try {
         let result = await assumeRole(
@@ -260,6 +270,7 @@ async function onBeforeRequestEvent(details) {
           keys.session_token,
           sessionduration
         );
+
         // Append AWS credentials keys as string to 'credentials' variable
         credentials = addProfileToCredentials(
           credentials,
@@ -293,7 +304,8 @@ async function assumeRoleWithSAML(
   // Pattern for Role
   let reRole = /arn:(aws|aws-cn|aws-us-gov):iam:[^:]*:[0-9]+:role\/[^,]+/i;
   // Patern for Principal (SAML Provider)
-  let rePrincipal = /arn:(aws|aws-cn|aws-us-gov):iam:[^:]*:[0-9]+:saml-provider\/[^,]+/i;
+  let rePrincipal =
+    /arn:(aws|aws-cn|aws-us-gov):iam:[^:]*:[0-9]+:saml-provider\/[^,]+/i;
   // Extract both regex patterns from the roleClaimValue (which is a SAMLAssertion attribute)
   RoleArn = roleClaimValue.match(reRole)[0];
   PrincipalArn = roleClaimValue.match(rePrincipal)[0];
@@ -324,10 +336,10 @@ async function assumeRoleWithSAML(
   };
   */
   let clientconfig = {
-    "aws": { region: "us-east-1", useGlobalEndpoint: true },
+    aws: { region: "us-east-1", useGlobalEndpoint: true },
     "aws-cn": { region: "cn-north-1" },
-    "aws-us-gov": { region: "us-east-1", useGlobalEndpoint: true }
-  }
+    "aws-us-gov": { region: "us-east-1", useGlobalEndpoint: true },
+  };
   const client = new webpacksts.AWSSTSClient(clientconfig[AWSPartition]);
   const command = new webpacksts.AWSAssumeRoleWithSAMLCommand(params);
 
@@ -366,19 +378,20 @@ async function assumeRole(
   // Set the fetched STS keys from the SAML response as credentials for doing the API call
   var RolePattern = /arn:(aws|aws-us-gov|aws-cn):iam:[^:]*:[0-9]+:role\/[^,]+/i;
   AWSPartition = roleArn.match(RolePattern)[1];
+
+  var clientconfig = {
+    region: "us-east-1", // region is mandatory to specify, but ignored when using global endpoint
+    useGlobalEndpoint: true,
+    credentials: {
+      accessKeyId: AccessKeyId,
+      secretAccessKey: SecretAccessKey,
+      sessionToken: SessionToken,
+    },
+  };
+
   if (AWSPartition == "aws-cn") {
-    var clientconfig = {
+    clientconfig = {
       region: "cn-north-1",
-      credentials: {
-        accessKeyId: AccessKeyId,
-        secretAccessKey: SecretAccessKey,
-        sessionToken: SessionToken,
-      },
-    };
-  } else {
-    var clientconfig = {
-      region: "us-east-1", // region is mandatory to specify, but ignored when using global endpoint
-      useGlobalEndpoint: true,
       credentials: {
         accessKeyId: AccessKeyId,
         secretAccessKey: SecretAccessKey,
@@ -387,7 +400,7 @@ async function assumeRole(
     };
   }
 
-  // AWS SDK is a module exorted from a webpack packaged lib
+  // AWS SDK is a module exerted from a webpack packaged lib
   // See 'library.name' in webpack.config.js
   const client = new webpacksts.AWSSTSClient(clientconfig);
   // Set the parameters for the AssumeRole API call. Meaning: What role to assume
@@ -403,6 +416,7 @@ async function assumeRole(
   console.log("INFO: assumeRole client.send will now be executed");
   try {
     const response = await client.send(command);
+
     console.log("INFO: assumeRole client.send is done!");
     let keys = {
       access_key_id: response.Credentials.AccessKeyId,

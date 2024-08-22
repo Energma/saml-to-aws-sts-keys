@@ -3,7 +3,9 @@
   <head>
     <script src="../lib/jquery-3.6.2.min.js"></script>
     <link rel="stylesheet" type="text/css" href="options.css" />
-    <title>Energma: Options page for 'SAML to AWS STS Keys Converter'</title>
+    <title>
+      Energma: Options page for 'SAML to AWS/Aliyun STS Keys Converter'
+    </title>
   </head>
   <body>
     <div id="divTitle">
@@ -11,7 +13,9 @@
         <img src="../icons/icon_128.png" alt="Icon" height="50" width="50" />
       </div>
       <div id="divHeader" class="inline-div">
-        <h2>Energma: Options page for 'SAML to AWS STS Keys Converter'</h2>
+        <h2>
+          Energma: Options page for 'SAML to AWS/Aliyun STS Keys Converter'
+        </h2>
       </div>
     </div>
     <hr />
@@ -31,8 +35,9 @@
     <div id="divSettings">
       <div id="divFilename" class="setting-part">
         <label
-          >Filename for writing the fetched AWS STS keys. File will be written
-          to Chrome's download directory. Example filename: credentials</label
+          >Filename for writing the fetched AWS/Aliyun STS keys. File will be
+          written to Chrome's download directory. Example filename:
+          credentials</label
         >
         <br />
         <input type="text" name="FileName" id="FileName" size="40" />
@@ -73,8 +78,8 @@
         <label>[OPTIONAL]</label><br />
         <label
           >Specify a list of Role ARN's. For each role the plugin will call the
-          assume-role API. The fetched AWS STS keys will be added to the output
-          file as separate profiles.</label
+          assume-role API. The fetched AWS/Aliyun STS keys will be added to the
+          output file as separate profiles.</label
         >
         <div id="role_arns" class="inline-div"></div>
       </div>
