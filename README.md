@@ -1,10 +1,18 @@
-# Saml to cloud credentials(sts token)
+#### Energma corp. (https://www.energma.co/)
 
+## Saml to cloud credentials (sts token)
 
-Google Chrome Extension, which converts a SAML 2.0 assertion to Cloud Provider STS Keys (temporary credentials). Just log in to the cloud Web Management Console using your SAML IDP, and the Chrome Extension will fetch the SAML Assertion from the HTTP request. The SAML Assertion is then used to call the assumeRoleWithSAML API to create the temporary credentials. (AccessKeyId, SecretAccessKey and SessionToken).currently support AWS(aws global,aws-cn,aws-us-gov, partition) Aliyun(china sites)
+Google Chrome Extension, which converts a SAML 2.0 assertion to Cloud Provider STS Keys (temporary credentials).
+Just log in to the cloud Web Management Console using your SAML IDP, and the Chrome Extension will fetch the SAML Assertion from the HTTP request.
+The SAML Assertion is then used to call the assumeRoleWithSAML API to create the temporary credentials.
+(AccessKeyId, SecretAccessKey and SessionToken).
 
+## Currently support:
 
-# Table of Contents
+- [AWS](https://aws.amazon.com/) [ aws global, aws-cn, aws-us-gov, support partition ]
+- [Aliyun](https://www.alibabacloud.com/en?_p_lc=1&f-8DC992C756BA=) [ china sites only ]
+
+## Table of Contents
 
 - [Why this Chrome Extension?](#why)
 - [Getting Started from source](#gettingstarted)
@@ -66,4 +74,3 @@ npm run build
 
 3. How long are the credentials valid?
    Cloud Proivder calls this 'session duration'. The default session duration is 1 hour. The maximum session duration is configured in AWS IAM as an attribute of the IAM Role. Your IDP might be configured to pass along an additional SAML claim which requests to apply a custom session duration. This value can be configured to be higher than the default of 1 hour. However, this can never be higher than the configured maximum session duration on the IAM Role as this will result in an error.
-
